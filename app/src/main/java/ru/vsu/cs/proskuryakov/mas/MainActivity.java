@@ -13,6 +13,8 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -23,8 +25,9 @@ public class MainActivity extends AppCompatActivity {
     private static final String TAG_STATUS = "status";
     private static final String TAG_DATA = "data";
 
-    /// В настройках WIFI сети AndroidWiFi установить локальный ip хоста в проксю
-
+    private static final String KEY = "MegaPa$$word";
+    private static final String IV = "InitVector";
+    private static final EasyAES EASY_AES = new EasyAES(KEY, 256, IV);
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -33,6 +36,7 @@ public class MainActivity extends AppCompatActivity {
 
         // Получаем ссылки на визуальные компоненты
         TextView labOut = (TextView)findViewById(R.id.labOut);
+        TextView encryptTV = (TextView)findViewById(R.id.encrypt);
         EditText tbData = (EditText)findViewById(R.id.tbData);
         Button butSend = (Button)findViewById(R.id.butSend);
 
@@ -42,7 +46,9 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 // Читаем введенные данные
-                String data_string = tbData.getText().toString();
+                String plainText = tbData.getText().toString();
+                String encryptMessage = EASY_AES.encrypt(plainText);
+                encryptTV.setText(encryptMessage);
 
                 // Создаем поток, в котором будет осуществляться обмен данными
                 Thread thread = new Thread(new Runnable() {
@@ -54,7 +60,7 @@ public class MainActivity extends AppCompatActivity {
 
                         try
                         {
-                            URL url = new URL(server_name + "/echo?data=" + data_string);
+                            URL url = new URL(server_name + "/echo?data=" + URLEncoder.encode(encryptMessage, StandardCharsets.UTF_8.toString()));
                             conn = (HttpURLConnection) url.openConnection();
                             conn.setReadTimeout(10000);
                             conn.setConnectTimeout(15000);
