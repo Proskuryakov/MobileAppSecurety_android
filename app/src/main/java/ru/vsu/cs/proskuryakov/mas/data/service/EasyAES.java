@@ -1,4 +1,4 @@
-package ru.vsu.cs.proskuryakov.mas;
+package ru.vsu.cs.proskuryakov.mas.data.service;
 
 import java.nio.charset.StandardCharsets;
 import java.security.Key;

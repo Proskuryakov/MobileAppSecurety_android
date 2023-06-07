@@ -16,46 +16,19 @@
         app:layout_constraintStart_toStartOf="parent"
         tools:layout_editor_absoluteY="108dp">
 
-        <TextView
-            android:id="@+id/textView"
+        <Button
+            android:id="@+id/butLab3"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Введите строку данных" />
-
-        <EditText
-            android:id="@+id/tbData"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:ems="10"
-            android:inputType="textPersonName" />
+            android:text="Лабораторная 3" />
 
         <Button
-            android:id="@+id/butSend"
+            android:id="@+id/butLab4"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Отправить" />
+            android:text="Лабораторная 4" />
 
-        <TextView
-            android:id="@+id/textView3"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Зашифрованное сообщение:" />
 
-        <TextView
-            android:id="@+id/encrypt"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content" />
-
-        <TextView
-            android:id="@+id/textView2"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Ответ сервера:" />
-
-        <TextView
-            android:id="@+id/labOut"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content" />
     </LinearLayout>
 
 </androidx.constraintlayout.widget.ConstraintLayout>
