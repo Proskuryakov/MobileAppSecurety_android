@@ -3,6 +3,7 @@ package ru.vsu.cs.proskuryakov.mas.data;
 import android.content.Context;
 import android.security.keystore.KeyGenParameterSpec;
 import android.security.keystore.KeyProperties;
+import android.util.Log;
 
 import ru.vsu.cs.proskuryakov.mas.data.model.LoggedInUser;
 
@@ -23,14 +24,16 @@ import javax.crypto.spec.GCMParameterSpec;
  */
 public class LoginDataSource {
 
+    private final String FILE_NAME = "passwords.dat";
+    private Context context;
+
     /// Сохраненные зашифрованные данные
     public Result login(String username, String password, Context context) {
-        // TODO: handle loggedInUser authentication
-        // Хеш пароля
-        HashMap<String, byte[]> hesh = new HashMap<String, byte[]>();
+        this.context = context;
 
-        // Имя файла для сохранения хэша пароля
-        String map_file_name = username + ".dat";
+        // Хеш пароля
+        HashMap<String, HashMap<String, byte[]>> heshMap = new HashMap<String, HashMap<String, byte[]>>();
+        HashMap<String, byte[]> hesh = new HashMap<>();
 
         // Генерация данных пользователя (имени)
         LoggedInUser fakeUser =
@@ -41,10 +44,11 @@ public class LoginDataSource {
         // Регистрация/авторизация
         try {
             // Загрузка сохранённого хэша
-            File file = new File(context.getFilesDir(), map_file_name);
-            if (file.exists()){
-                ObjectInputStream fis = new ObjectInputStream(context.openFileInput(map_file_name));
-                hesh = (HashMap<String, byte[]>)fis.readObject();
+            File file = new File(context.getFilesDir(), FILE_NAME);
+            if (file.exists()) {
+                ObjectInputStream fis = new ObjectInputStream(context.openFileInput(FILE_NAME));
+                heshMap = (HashMap<String, HashMap<String, byte[]>>) fis.readObject();
+                hesh = heshMap.get(username);
                 fis.close();
             }
 
@@ -52,7 +56,7 @@ public class LoginDataSource {
             String alias = "MyKeyAlias";
 
             // Если нет сохраненных данных для этого пользователя, то "регистрируем" его:
-            if (hesh.isEmpty()) {
+            if (hesh == null || hesh.isEmpty()) {
                 // Генерирация нового случайного ключа
                 final KeyGenerator keyGenerator = KeyGenerator.getInstance(KeyProperties.KEY_ALGORITHM_AES, "AndroidKeyStore");
                 final KeyGenParameterSpec keyGenParameterSpec = new KeyGenParameterSpec.Builder(alias,
@@ -60,7 +64,7 @@ public class LoginDataSource {
                     .setBlockModes(KeyProperties.BLOCK_MODE_GCM)
                     .setEncryptionPaddings(KeyProperties.ENCRYPTION_PADDING_NONE)
                     //.setUserAuthenticationRequired(true) //requires lock screen, invalidated if lock screen is disabled
-                    //.setUserAuthenticationValidityDurationSeconds(120) //only available x seconds from password authentication. -1 requires finger print - every time
+//                    .setUserAuthenticationValidityDurationSeconds(-1) //only available x seconds from password authentication. -1 requires finger print - every time
                     .setRandomizedEncryptionRequired(true) //different ciphertext for same plaintext on each call
                     .build();
                 keyGenerator.init(keyGenParameterSpec);
@@ -70,9 +74,11 @@ public class LoginDataSource {
                 byte[] passBytes = password.getBytes("UTF-8");
                 hesh = encrypt(passBytes, alias);
 
+                heshMap.put(username, hesh);
+
                 // Сохранение хэша в файл
-                ObjectOutputStream oos = new ObjectOutputStream(context.openFileOutput(map_file_name, Context.MODE_PRIVATE));
-                oos.writeObject(hesh);
+                ObjectOutputStream oos = new ObjectOutputStream(context.openFileOutput(FILE_NAME, Context.MODE_PRIVATE));
+                oos.writeObject(heshMap);
                 oos.close();
 
                 // Успешная регистрация
@@ -87,8 +93,7 @@ public class LoginDataSource {
                     return new Result.Success<>(fakeUser);
                 else
                     return new Result.Error("Wrong password");
-            }
-            else
+            } else
                 return new Result.Error("Decrypt error");
 
         } catch (Exception e) {
@@ -96,19 +101,32 @@ public class LoginDataSource {
         }
     }
 
-    public void logout() {
-        // TODO: revoke authentication
+    public void logout(String username) {
+        try {
+            File file = new File(context.getFilesDir(), FILE_NAME);
+            if (file.exists()) {
+                ObjectInputStream fis = new ObjectInputStream(context.openFileInput(FILE_NAME));
+                HashMap<String, HashMap<String, byte[]>> heshMap = (HashMap<String, HashMap<String, byte[]>>) fis.readObject();
+                HashMap<String, byte[]> hesh = heshMap.get(username);
+                heshMap.remove(username, hesh);
+                fis.close();
+                ObjectOutputStream oos = new ObjectOutputStream(context.openFileOutput(FILE_NAME, Context.MODE_PRIVATE));
+                oos.writeObject(heshMap);
+                oos.close();
+                Log.i("LoginDataSource", "LOGOUT");
+            }
+        } catch (Exception e) {
+            Log.e("LoginDataSource", "LOGOUT ERROR");
+        }
     }
 
-    private HashMap<String, byte[]> encrypt(final byte[] decryptedBytes, String alias)
-    {
+    private HashMap<String, byte[]> encrypt(final byte[] decryptedBytes, String alias) {
         final HashMap<String, byte[]> map = new HashMap<String, byte[]>();
-        try
-        {
+        try {
             //Get the key
             final KeyStore keyStore = KeyStore.getInstance("AndroidKeyStore");
             keyStore.load(null);
-            final KeyStore.SecretKeyEntry secretKeyEntry = (KeyStore.SecretKeyEntry)keyStore.getEntry(alias, null);
+            final KeyStore.SecretKeyEntry secretKeyEntry = (KeyStore.SecretKeyEntry) keyStore.getEntry(alias, null);
             final SecretKey secretKey = secretKeyEntry.getSecretKey();
             //Encrypt data
             final Cipher cipher = Cipher.getInstance("AES/GCM/NoPadding");
@@ -117,23 +135,19 @@ public class LoginDataSource {
             final byte[] encryptedBytes = cipher.doFinal(decryptedBytes);
             map.put("iv", ivBytes);
             map.put("encrypted", encryptedBytes);
-        }
-        catch (Throwable e)
-        {
+        } catch (Throwable e) {
             e.printStackTrace();
         }
         return map;
     }
 
-    private byte[] decrypt(final HashMap<String, byte[]> map, String alias)
-    {
+    private byte[] decrypt(final HashMap<String, byte[]> map, String alias) {
         byte[] decryptedBytes = null;
-        try
-        {
+        try {
             //Get the key
             final KeyStore keyStore = KeyStore.getInstance("AndroidKeyStore");
             keyStore.load(null);
-            final KeyStore.SecretKeyEntry secretKeyEntry = (KeyStore.SecretKeyEntry)keyStore.getEntry(alias, null);
+            final KeyStore.SecretKeyEntry secretKeyEntry = (KeyStore.SecretKeyEntry) keyStore.getEntry(alias, null);
             final SecretKey secretKey = secretKeyEntry.getSecretKey();
             //Extract info from map
             final byte[] encryptedBytes = map.get("encrypted");
@@ -143,9 +157,7 @@ public class LoginDataSource {
             final GCMParameterSpec spec = new GCMParameterSpec(128, ivBytes);
             cipher.init(Cipher.DECRYPT_MODE, secretKey, spec);
             decryptedBytes = cipher.doFinal(encryptedBytes);
-        }
-        catch (Throwable e)
-        {
+        } catch (Throwable e) {
             e.printStackTrace();
         }
         return decryptedBytes;

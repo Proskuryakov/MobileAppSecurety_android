@@ -11,6 +11,7 @@ import java.io.FileNotFoundException;
 
 import ru.vsu.cs.proskuryakov.mas.data.LoginRepository;
 import ru.vsu.cs.proskuryakov.mas.data.Result;
+import ru.vsu.cs.proskuryakov.mas.data.model.CustomData;
 import ru.vsu.cs.proskuryakov.mas.data.model.LoggedInUser;
 import ru.vsu.cs.proskuryakov.mas.R;
 
@@ -38,7 +39,7 @@ public class LoginViewModel extends ViewModel {
         if (result instanceof Result.Success) {
             LoggedInUser data = ((Result.Success<LoggedInUser>) result).getData();
             // Получаем дополнительные данные пользователя (например, число)
-            Integer customData = 1;
+            CustomData customData = new CustomData("custom data");
             // Формируем данные в структуру, для передачи в главное окно
             LoggedInUserView userData = new LoggedInUserView(data.getDisplayName(), customData);
             loginResult.setValue(new LoginResult(userData));
@@ -74,4 +75,9 @@ public class LoginViewModel extends ViewModel {
     private boolean isPasswordValid(String password) {
         return password != null && password.trim().length() > 5;
     }
+
+    public void logout() {
+        loginRepository.logout();
+    }
+
 }

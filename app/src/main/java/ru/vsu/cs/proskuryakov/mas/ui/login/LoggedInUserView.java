@@ -7,15 +7,17 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.Serializable;
 
+import ru.vsu.cs.proskuryakov.mas.data.model.CustomData;
+
 /**
  * Class exposing authenticated user details to the UI.
  */
 public class LoggedInUserView implements Serializable {
     private String displayName;
     //... other data fields that may be accessible to the UI
-    private Integer displayData;
+    private CustomData displayData;
 
-    LoggedInUserView(String displayName, Integer displayData) {
+    LoggedInUserView(String displayName, CustomData displayData) {
         this.displayName = displayName;
         this.displayData = displayData;
     }
@@ -24,7 +26,7 @@ public class LoggedInUserView implements Serializable {
         return displayName;
     }
 
-    public Integer getDisplayData() {
+    public CustomData getDisplayData() {
         return displayData;
     }
 
@@ -38,6 +40,6 @@ public class LoggedInUserView implements Serializable {
         throws ClassNotFoundException, IOException {
         ois.defaultReadObject();
         displayName = (String)ois.readObject();
-        displayData = (Integer)ois.readObject();
+        displayData = (CustomData)ois.readObject();
     }
 }

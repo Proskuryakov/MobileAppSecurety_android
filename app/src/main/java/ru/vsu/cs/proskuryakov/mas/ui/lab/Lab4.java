@@ -9,6 +9,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import android.app.Activity;
 import android.content.Intent;
 import android.os.Bundle;
+import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
 
@@ -28,7 +29,10 @@ public class Lab4 extends AppCompatActivity {
         setContentView(binding.getRoot());
 
         Button butBack = binding.btnBack;
+        Button butLogout = binding.logout;
+
         butBack.setOnClickListener((v) -> finish());
+        butLogout.setOnClickListener((v) -> logout());
 
         // Вызов формы авторизации
         Intent intent = new Intent(this, LoginActivity.class);
@@ -44,9 +48,11 @@ public class Lab4 extends AppCompatActivity {
                 TextView tvLogin = binding.tvName;
                 TextView tvData = binding.tvData;
                 TextView tvError = binding.tvError;
+                Button butLogout = binding.logout;
 
                 // Проверка результата входа
                 if (result.getResultCode() == Activity.RESULT_OK) {
+                    butLogout.setVisibility(View.VISIBLE);
                     // В случае успеха, получение данных пользователя
                     Intent intent = result.getData();
                     if (intent.hasExtra("UserData")) {
@@ -60,6 +66,7 @@ public class Lab4 extends AppCompatActivity {
                         });
                     }
                 } else {
+                    butLogout.setVisibility(View.INVISIBLE);
                     // В случае неудачи - сообщение об ошибке
                     Intent intent = result.getData();
                     if (intent.hasExtra("Error")) {
@@ -74,4 +81,11 @@ public class Lab4 extends AppCompatActivity {
                 }
             }
         });
+
+    private void logout(){
+        Intent intent  = new Intent(this, LoginActivity.class);
+        intent.putExtra("logout",true);
+        mStartForResult.launch(intent);
+    }
+
 }
